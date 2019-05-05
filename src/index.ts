@@ -1,5 +1,6 @@
 import axios from "axios";
 import { JSDOM } from "jsdom";
+import * as EventSource from "eventsource";
 
 interface ITeam {
   name: "string";
@@ -18,6 +19,17 @@ export interface INrlMatch {
     currentGameTime: string;
   };
 }
+
+/**
+ * Returns an event source..
+ *
+ * @todo have not tested
+ *
+ * @param matchSlug the slug from the nrl site
+ */
+export const getMatchEventSource = async (matchSlug: string) => {
+  return new EventSource(matchSlug);
+};
 
 export const getMatchesByRound = async (
   round?: number
@@ -58,3 +70,11 @@ export const getMatchesByRound = async (
     );
   return matches;
 };
+
+// getMatchesByRound().then(console.log);
+
+// getMatchEventSource(
+//   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"
+// ).then(src => {
+//   src.onmessage = msg => console.log(msg);
+// });
