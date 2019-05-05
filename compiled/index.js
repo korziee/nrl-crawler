@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
 const jsdom_1 = require("jsdom");
-const EventSource = require("eventsource");
 /**
  * Returns an event source..
  *
@@ -11,7 +10,7 @@ const EventSource = require("eventsource");
  * @param matchSlug the slug from the nrl site
  */
 exports.getMatchEventSource = async (matchSlug) => {
-    return new EventSource(matchSlug);
+    // return new EventSource(matchSlug);
 };
 exports.getMatchesByRound = async (round) => {
     const { data } = await axios_1.default.get(`https://www.nrl.com/draw/?competition=111&season=2019&round=${round ? round : "" // defaults to the current round!

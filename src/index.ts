@@ -1,6 +1,6 @@
 import axios from "axios";
 import { JSDOM } from "jsdom";
-import * as EventSource from "eventsource";
+// import * as EventSource from "eventsource";
 
 interface ITeam {
   name: "string";
@@ -28,7 +28,7 @@ export interface INrlMatch {
  * @param matchSlug the slug from the nrl site
  */
 export const getMatchEventSource = async (matchSlug: string) => {
-  return new EventSource(matchSlug);
+  // return new EventSource(matchSlug);
 };
 
 export const getMatchesByRound = async (

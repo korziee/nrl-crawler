@@ -1,4 +1,3 @@
-import * as EventSource from "eventsource";
 interface ITeam {
     name: "string";
     score: number;
@@ -22,6 +21,6 @@ export interface INrlMatch {
  *
  * @param matchSlug the slug from the nrl site
  */
-export declare const getMatchEventSource: (matchSlug: string) => Promise<EventSource>;
+export declare const getMatchEventSource: (matchSlug: string) => Promise<void>;
 export declare const getMatchesByRound: (round?: number) => Promise<INrlMatch[]>;
 export {};
