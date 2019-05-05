@@ -1,3 +1,4 @@
+import * as EventSource from "eventsource";
 interface ITeam {
     name: "string";
     score: number;
@@ -14,5 +15,13 @@ export interface INrlMatch {
         currentGameTime: string;
     };
 }
+/**
+ * Returns an event source..
+ *
+ * @todo have not tested
+ *
+ * @param matchSlug the slug from the nrl site
+ */
+export declare const getMatchEventSource: (matchSlug: string) => Promise<EventSource>;
 export declare const getMatchesByRound: (round?: number) => Promise<INrlMatch[]>;
 export {};
