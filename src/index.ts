@@ -34,11 +34,17 @@ export const getMatchEventSource = async (matchSlug: string) => {
 export const getMatchesByRound = async (
   round?: number
 ): Promise<INrlMatch[]> => {
-  const { data } = await axios.get(
-    `https://www.nrl.com/draw/?competition=111&season=2019&round=${
-      round ? round : "" // defaults to the current round!
-    }`
-  );
+  let data;
+  try {
+    const response = await axios.get(
+      `https://www.nrl.com/draw/?competition=111&season=2019&round=${
+        round ? round : "" // defaults to the current round!
+      }`
+    );
+    data = response.data;
+  } catch (e) {
+    throw e;
+  }
 
   const { document } = new JSDOM(data).window;
 
@@ -47,6 +53,7 @@ export const getMatchesByRound = async (
   );
 
   const matches: INrlMatch[] = (drawData.drawGroups as [])
+    .filter((v: any) => v.title !== "Byes")
     .flatMap((day: any) => day.matches)
     .map(
       (match): INrlMatch => ({
@@ -71,7 +78,7 @@ export const getMatchesByRound = async (
   return matches;
 };
 
-// getMatchesByRound().then(console.log);
+getMatchesByRound().then(console.log);
 
 // getMatchEventSource(
 //   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"

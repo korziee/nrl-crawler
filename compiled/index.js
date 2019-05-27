@@ -13,11 +13,19 @@ exports.getMatchEventSource = async (matchSlug) => {
     // return new EventSource(matchSlug);
 };
 exports.getMatchesByRound = async (round) => {
-    const { data } = await axios_1.default.get(`https://www.nrl.com/draw/?competition=111&season=2019&round=${round ? round : "" // defaults to the current round!
-    }`);
+    let data;
+    try {
+        const response = await axios_1.default.get(`https://www.nrl.com/draw/?competition=111&season=2019&round=${round ? round : "" // defaults to the current round!
+        }`);
+        data = response.data;
+    }
+    catch (e) {
+        throw e;
+    }
     const { document } = new jsdom_1.JSDOM(data).window;
     const drawData = JSON.parse(document.querySelector("#vue-draw").getAttribute("q-data"));
     const matches = drawData.drawGroups
+        .filter((v) => v.title !== "Byes")
         .flatMap((day) => day.matches)
         .map((match) => ({
         venue: match.venue,
@@ -39,7 +47,7 @@ exports.getMatchesByRound = async (round) => {
     }));
     return matches;
 };
-// getMatchesByRound().then(console.log);
+exports.getMatchesByRound().then(console.log);
 // getMatchEventSource(
 //   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"
 // ).then(src => {
