@@ -78,7 +78,7 @@ export const getMatchesByRound = async (
   return matches;
 };
 
-getMatchesByRound().then(console.log);
+// getMatchesByRound().then(console.log);
 
 // getMatchEventSource(
 //   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"
