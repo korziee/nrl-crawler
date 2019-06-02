@@ -3,13 +3,14 @@ import { JSDOM } from "jsdom";
 // import * as EventSource from "eventsource";
 
 interface ITeam {
-  name: "string";
+  name: string;
   score: number;
   ladderPosition: string;
 }
 
 export interface INrlMatch {
   matchMode: "Post" | "Pre" | "Current";
+  round: string;
   venue: string;
   homeTeam: ITeam;
   awayTeam: ITeam;
@@ -18,6 +19,12 @@ export interface INrlMatch {
     /** @example "23:40" */
     currentGameTime: string;
   };
+}
+
+export interface ILiveNrlMatch {
+  homeScore: string;
+  awayScore: string;
+  clock:
 }
 
 /**
@@ -29,6 +36,46 @@ export interface INrlMatch {
  */
 export const getMatchEventSource = async (matchSlug: string) => {
   // return new EventSource(matchSlug);
+};
+
+export const getLiveMatchScore = async (
+  round: string,
+  /** away-vs-home */
+  matchSlug: string
+): Promise<INrlMatch> => {
+  let data;
+  try {
+    const response = await axios.get(
+      `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${matchSlug}/`
+    );
+    data = response.data;
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+
+  const { document } = new JSDOM(data).window;
+
+  const gameData = JSON.parse(
+    document.querySelector("#vue-match-centre").getAttribute("q-data")
+  );
+
+  const clockTimeElement = document.querySelector(".match-clock__time");
+
+  let clockTime;
+  if (clockTimeElement) {
+    clockTime = clockTimeElement.innerHTML.trim();
+  }
+
+  return {
+    venue: gameData.venue,
+    round: round,
+    clock: {
+      currentGameTime: clockTime || "unknown",
+      kickOffTime: gameData.startTime
+    },
+    matchMode: ""
+  };
 };
 
 export const getMatchesByRound = async (
@@ -52,6 +99,12 @@ export const getMatchesByRound = async (
     document.querySelector("#vue-draw").getAttribute("q-data")
   );
 
+  const pageRound = document
+    .querySelector(".filter-round__button--dropdown")
+    .innerHTML.trim();
+
+  console.log(1, drawData.drawGroups[1].matches);
+
   const matches: INrlMatch[] = (drawData.drawGroups as [])
     .filter((v: any) => v.title !== "Byes")
     .flatMap((day: any) => day.matches)
@@ -59,6 +112,7 @@ export const getMatchesByRound = async (
       (match): INrlMatch => ({
         venue: match.venue,
         matchMode: match.matchMode,
+        round: pageRound,
         homeTeam: {
           name: match.homeTeam.nickName,
           ladderPosition: match.homeTeam.teamPosition,
@@ -78,7 +132,7 @@ export const getMatchesByRound = async (
   return matches;
 };
 
-// getMatchesByRound().then(console.log);
+getMatchesByRound().then(console.log);
 
 // getMatchEventSource(
 //   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"

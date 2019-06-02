@@ -12,6 +12,35 @@ const jsdom_1 = require("jsdom");
 exports.getMatchEventSource = async (matchSlug) => {
     // return new EventSource(matchSlug);
 };
+exports.getLiveMatchScore = async (round, 
+/** away-vs-home */
+matchSlug) => {
+    let data;
+    try {
+        const response = await axios_1.default.get(`https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${matchSlug}/`);
+        data = response.data;
+    }
+    catch (e) {
+        console.error(e);
+        return;
+    }
+    const { document } = new jsdom_1.JSDOM(data).window;
+    const gameData = JSON.parse(document.querySelector("#vue-match-centre").getAttribute("q-data"));
+    const clockTimeElement = document.querySelector(".match-clock__time");
+    let clockTime;
+    if (clockTimeElement) {
+        clockTime = clockTimeElement.innerHTML.trim();
+    }
+    return {
+        venue: gameData.venue,
+        round: round,
+        clock: {
+            currentGameTime: clockTime || "unknown",
+            kickOffTime: gameData.startTime
+        },
+        matchMode: ""
+    };
+};
 exports.getMatchesByRound = async (round) => {
     let data;
     try {
@@ -24,12 +53,17 @@ exports.getMatchesByRound = async (round) => {
     }
     const { document } = new jsdom_1.JSDOM(data).window;
     const drawData = JSON.parse(document.querySelector("#vue-draw").getAttribute("q-data"));
+    const pageRound = document
+        .querySelector(".filter-round__button--dropdown")
+        .innerHTML.trim();
+    console.log(1, drawData.drawGroups[1].matches);
     const matches = drawData.drawGroups
         .filter((v) => v.title !== "Byes")
         .flatMap((day) => day.matches)
         .map((match) => ({
         venue: match.venue,
         matchMode: match.matchMode,
+        round: pageRound,
         homeTeam: {
             name: match.homeTeam.nickName,
             ladderPosition: match.homeTeam.teamPosition,
@@ -47,7 +81,7 @@ exports.getMatchesByRound = async (round) => {
     }));
     return matches;
 };
-// getMatchesByRound().then(console.log);
+exports.getMatchesByRound().then(console.log);
 // getMatchEventSource(
 //   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"
 // ).then(src => {

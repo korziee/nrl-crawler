@@ -1,10 +1,11 @@
 interface ITeam {
-    name: "string";
+    name: string;
     score: number;
     ladderPosition: string;
 }
 export interface INrlMatch {
     matchMode: "Post" | "Pre" | "Current";
+    round: string;
     venue: string;
     homeTeam: ITeam;
     awayTeam: ITeam;
@@ -14,6 +15,7 @@ export interface INrlMatch {
         currentGameTime: string;
     };
 }
+export declare type ILiveNrlMatch = Pick<INrlMatch, "venue" | "homeTeam" | "awayTeam" | "clock">;
 /**
  * Returns an event source..
  *
@@ -22,5 +24,6 @@ export interface INrlMatch {
  * @param matchSlug the slug from the nrl site
  */
 export declare const getMatchEventSource: (matchSlug: string) => Promise<void>;
+export declare const getLiveMatchScore: (round: string, matchSlug: string) => Promise<INrlMatch>;
 export declare const getMatchesByRound: (round?: number) => Promise<INrlMatch[]>;
 export {};
