@@ -1,29 +1,31 @@
 interface ITeam {
     name: string;
-    score: number;
-    ladderPosition: string;
+    nickName: string;
+}
+interface INrlApi {
+    getMatchDetails: (matchId: string, round: number) => Promise<INrlMatch>;
+    getRoundDetails: (round?: number) => Promise<INrlRound>;
+    getAllRounds: () => Promise<any>;
+}
+/** Matches are grouped up in the days in which they occur */
+export interface INrlRound {
+    date: Date;
+    matches: INrlMatch[];
 }
 export interface INrlMatch {
     matchMode: "Post" | "Pre" | "Current";
-    round: string;
     venue: string;
+    round: string;
+    matchId: string;
     homeTeam: ITeam;
     awayTeam: ITeam;
-    clock: {
-        kickOffTime: Date;
-        /** @example "23:40" */
-        currentGameTime: string;
-    };
+    homeScore: string;
+    awayScore: string;
+    kickOffTime: Date;
+    /** @example "23:40" */
+    gameSecondsElapsed: string;
 }
-export declare type ILiveNrlMatch = Pick<INrlMatch, "venue" | "homeTeam" | "awayTeam" | "clock">;
-/**
- * Returns an event source..
- *
- * @todo have not tested
- *
- * @param matchSlug the slug from the nrl site
- */
-export declare const getMatchEventSource: (matchSlug: string) => Promise<void>;
-export declare const getLiveMatchScore: (round: string, matchSlug: string) => Promise<INrlMatch>;
-export declare const getMatchesByRound: (round?: number) => Promise<INrlMatch[]>;
+export declare class NrlApi implements INrlApi {
+    static getMatchDetails(matchId: string): Promise<INrlMatch>;
+}
 export {};
