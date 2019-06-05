@@ -6,9 +6,17 @@ interface ITeam {
   name: string;
   nickName: string;
 }
+
+interface INrlLadder {
+  [key: string]: string;
+}
 interface INrlApi {
+  /** Returns the current ladder in a keyed format */
+  getLadder: () => Promise<INrlLadder>;
   getMatchDetails: (matchId: string, round: number) => Promise<INrlMatch>;
+  /** Information on a specific round */
   getRoundDetails: (round?: number) => Promise<INrlRound>;
+  /** Information from all of the rounds */
   getAllRounds: () => Promise<any>;
 }
 
@@ -16,6 +24,8 @@ interface INrlApi {
 export interface INrlRound {
   date: Date;
   matches: INrlMatch[];
+  /** Names of teams with byes */
+  byes: string[];
 }
 
 export interface INrlMatch {
