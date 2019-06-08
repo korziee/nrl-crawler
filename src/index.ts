@@ -98,7 +98,9 @@ export class NrlApi implements INrlApi {
     try {
       const response = await axios.get(
         // TODO - remove hard-coded 2019
-        `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/`
+        `https://www.nrl.com/draw/nrl-premiership/2019/${
+          round ? `round-${round}/` : ""
+        }`
       );
       data = response.data;
     } catch (e) {
