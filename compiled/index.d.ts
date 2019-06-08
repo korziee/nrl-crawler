@@ -56,10 +56,6 @@ export declare class NrlApi implements INrlApi {
         5: string;
         6: string;
         7: string;
-        /**
-         * Seems that quite a lot of data pages on the NRL site respond when you append a "/data" to the end of the url.
-         * @example https://www.nrl.com/draw/data?competition=111&season=2019&round=17
-         */
         8: string;
         9: string;
         10: string;

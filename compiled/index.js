@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
-const jsdom_1 = require("jsdom");
 const rounds_1 = require("./rounds");
 class NrlApi {
     async getMatchDetails(matchId) {
@@ -35,21 +34,17 @@ class NrlApi {
         };
     }
     async getRoundDetails(round) {
-        let data;
-        try {
-            const response = await axios_1.default.get(
-            // TODO - remove hard-coded 2019
-            `https://www.nrl.com/draw/nrl-premiership/2019/${round ? `round-${round}/` : ""}`);
-            data = response.data;
-        }
-        catch (e) {
+        const { data } = await axios_1.default
+            .get(`https://www.nrl.com/draw/data/?competition=111&season=2019&round=${round}`)
+            .catch(e => {
             throw new Error(e);
-        }
-        const { document } = new jsdom_1.JSDOM(data).window;
-        const gameData = JSON.parse(document.querySelector("#vue-draw").getAttribute("q-data"));
-        const { drawGroups } = gameData;
-        const drawRound = (round && round.toString()) ||
-            document.querySelector(".filter-round__button--dropdown").textContent;
+        });
+        const { drawGroups } = data;
+        // console.log(1, drawGroups);
+        const matchCentreUrl = drawGroups[0].matches[0].matchCentreUrl;
+        const roundFromMatchCentreUrl = matchCentreUrl
+            .match(/(round-..?)\//)[1]
+            .split("-")[1];
         const byes = [];
         const matches = drawGroups.reduce((accum, group) => {
             if (group.title === "Byes") {
@@ -67,9 +62,9 @@ class NrlApi {
                     nickName: x.homeTeam.nickName
                 },
                 kickOffTime: x.clock.kickOffTimeLong,
-                matchId: `${drawRound}/${x.homeTeam.nickName}-v-${x.awayTeam.nickName}`,
+                matchId: `${roundFromMatchCentreUrl}/${x.homeTeam.nickName}-v-${x.awayTeam.nickName}`,
                 matchMode: x.matchMode,
-                round: drawRound,
+                round: roundFromMatchCentreUrl,
                 venue: x.venue
             }));
             return accum;
@@ -96,5 +91,4 @@ class NrlApi {
     }
 }
 exports.NrlApi = NrlApi;
-// new NrlApi().getMatchDetails("13/rabbitohs-v-knights").then(console.log);
 //# sourceMappingURL=index.js.map

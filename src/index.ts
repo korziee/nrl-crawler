@@ -1,5 +1,4 @@
 import axios from "axios";
-import { JSDOM } from "jsdom";
 import { rounds } from "./rounds";
 
 /**
@@ -94,27 +93,22 @@ export class NrlApi implements INrlApi {
   }
 
   async getRoundDetails(round?: number): Promise<INrlRound> {
-    let data;
-    try {
-      const response = await axios.get(
-        // TODO - remove hard-coded 2019
-        `https://www.nrl.com/draw/nrl-premiership/2019/${
-          round ? `round-${round}/` : ""
-        }`
-      );
-      data = response.data;
-    } catch (e) {
-      throw new Error(e);
-    }
-    const { document } = new JSDOM(data).window;
-    const gameData = JSON.parse(
-      document.querySelector("#vue-draw").getAttribute("q-data")
-    );
-    const { drawGroups } = gameData;
+    const { data } = await axios
+      .get(
+        `https://www.nrl.com/draw/data/?competition=111&season=2019&round=${round}`
+      )
+      .catch(e => {
+        throw new Error(e);
+      });
 
-    const drawRound =
-      (round && round.toString()) ||
-      document.querySelector(".filter-round__button--dropdown").textContent;
+    const { drawGroups } = data;
+
+    // console.log(1, drawGroups);
+
+    const matchCentreUrl = drawGroups[0].matches[0].matchCentreUrl;
+    const roundFromMatchCentreUrl = matchCentreUrl
+      .match(/(round-..?)\//)[1]
+      .split("-")[1];
 
     const byes: string[] = [];
 
@@ -136,11 +130,11 @@ export class NrlApi implements INrlApi {
               nickName: x.homeTeam.nickName
             },
             kickOffTime: x.clock.kickOffTimeLong,
-            matchId: `${drawRound}/${x.homeTeam.nickName}-v-${
+            matchId: `${roundFromMatchCentreUrl}/${x.homeTeam.nickName}-v-${
               x.awayTeam.nickName
             }`,
             matchMode: x.matchMode,
-            round: drawRound,
+            round: roundFromMatchCentreUrl,
             venue: x.venue
           })
         );
@@ -175,5 +169,3 @@ export class NrlApi implements INrlApi {
     return Promise.resolve(rounds);
   }
 }
-
-// new NrlApi().getMatchDetails("13/rabbitohs-v-knights").then(console.log);
