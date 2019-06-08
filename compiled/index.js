@@ -34,14 +34,60 @@ class NrlApi {
             matchMode: match.matchMode,
             venue: match.venue,
             round: match.roundNumber,
+            // TODO - fix matchTime to be timezone specific
             kickOffTime: match.startTime,
             matchId: `${match.roundNumber}/${match.homeTeam.nickName}-v-${match.awayTeam.nickName}`,
             gameSecondsElapsed: match.gameSeconds
         };
     }
+    static async getRoundDetails(round) {
+        let data;
+        try {
+            const response = await axios_1.default.get(
+            // TODO - remove hard-coded 2019
+            `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/`);
+            data = response.data;
+        }
+        catch (e) {
+            throw new Error(e);
+        }
+        const { document } = new jsdom_1.JSDOM(data).window;
+        const gameData = JSON.parse(document.querySelector("#vue-draw").getAttribute("q-data"));
+        const { drawGroups } = gameData;
+        const drawRound = (round && round.toString()) ||
+            document.querySelector(".filter-round__button--dropdown").textContent;
+        const byes = [];
+        const matches = drawGroups.reduce((accum, group) => {
+            if (group.title === "Byes") {
+                byes.push(...group.byes.map((x) => x.teamNickName));
+                return accum;
+            }
+            if (accum[group.title]) {
+                return accum;
+            }
+            accum[group.title] = group.matches.map((x) => ({
+                awayTeam: {
+                    nickName: x.awayTeam.nickName
+                },
+                homeTeam: {
+                    nickName: x.homeTeam.nickName
+                },
+                kickOffTime: x.clock.kickOffTimeLong,
+                matchId: `${drawRound}/${x.homeTeam.nickName}-v-${x.awayTeam.nickName}`,
+                matchMode: x.matchMode,
+                round: drawRound,
+                venue: x.venue
+            }));
+            return accum;
+        }, {});
+        return {
+            matches,
+            byes
+        };
+    }
 }
 exports.NrlApi = NrlApi;
-NrlApi.getMatchDetails("13/rabbitohs-v-knights").then(console.log);
+NrlApi.getRoundDetails(16).then(console.log);
 // interface ITeam {
 //   name: string;
 //   score: number;

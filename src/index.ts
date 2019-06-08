@@ -2,8 +2,11 @@ import axios from "axios";
 import { JSDOM } from "jsdom";
 // import * as EventSource from "eventsource";
 
+// FOUND AN API!!! https://www.nrl.com/draw/data?competition=111&season=2019&round=17
+// ANYTHING WITH THE /data on the end returns JSON!!!!
+
 interface ITeam {
-  name: string;
+  name?: string;
   nickName: string;
 }
 
@@ -20,10 +23,9 @@ interface INrlApi {
   getAllRounds: () => Promise<any>;
 }
 
-/** Matches are grouped up in the days in which they occur */
 export interface INrlRound {
-  date: Date;
-  matches: INrlMatch[];
+  /** Matches are grouped up in the days in which they occur */
+  matches: { [key: string]: INrlMatch[] };
   /** Names of teams with byes */
   byes: string[];
 }
@@ -35,15 +37,18 @@ export interface INrlMatch {
   matchId: string;
   homeTeam: ITeam;
   awayTeam: ITeam;
+  kickOffTime: Date;
+}
+
+export interface INrlMatchLive extends INrlMatch {
   homeScore: string;
   awayScore: string;
-  kickOffTime: Date;
   /** @example "23:40" */
   gameSecondsElapsed: string;
 }
 
 export class NrlApi implements INrlApi {
-  static async getMatchDetails(matchId: string): Promise<INrlMatch> {
+  static async getMatchDetails(matchId: string): Promise<INrlMatchLive> {
     if (!matchId) {
       throw new Error("MatchId is required");
     }
@@ -79,6 +84,7 @@ export class NrlApi implements INrlApi {
       matchMode: match.matchMode,
       venue: match.venue,
       round: match.roundNumber,
+      // TODO - fix matchTime to be timezone specific
       kickOffTime: match.startTime,
       matchId: `${match.roundNumber}/${match.homeTeam.nickName}-v-${
         match.awayTeam.nickName
@@ -87,10 +93,69 @@ export class NrlApi implements INrlApi {
     };
   }
 
-  static async getRoundDetails(round?: number): Promise<INrlRound> {}
+  static async getRoundDetails(round?: number): Promise<INrlRound> {
+    let data;
+    try {
+      const response = await axios.get(
+        // TODO - remove hard-coded 2019
+        `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/`
+      );
+      data = response.data;
+    } catch (e) {
+      throw new Error(e);
+    }
+    const { document } = new JSDOM(data).window;
+    const gameData = JSON.parse(
+      document.querySelector("#vue-draw").getAttribute("q-data")
+    );
+    const { drawGroups } = gameData;
+
+    const drawRound =
+      (round && round.toString()) ||
+      document.querySelector(".filter-round__button--dropdown").textContent;
+
+    const byes: string[] = [];
+
+    const matches = drawGroups.reduce(
+      (accum: { [key: string]: INrlMatch }, group: any) => {
+        if (group.title === "Byes") {
+          byes.push(...group.byes.map((x: any) => x.teamNickName));
+          return accum;
+        }
+        if (accum[group.title]) {
+          return accum;
+        }
+        accum[group.title] = group.matches.map(
+          (x: any): INrlMatch => ({
+            awayTeam: {
+              nickName: x.awayTeam.nickName
+            },
+            homeTeam: {
+              nickName: x.homeTeam.nickName
+            },
+            kickOffTime: x.clock.kickOffTimeLong,
+            matchId: `${drawRound}/${x.homeTeam.nickName}-v-${
+              x.awayTeam.nickName
+            }`,
+            matchMode: x.matchMode,
+            round: drawRound,
+            venue: x.venue
+          })
+        );
+        return accum;
+      },
+      {} as {
+        [key: string]: INrlMatch[];
+      }
+    );
+    return {
+      matches,
+      byes
+    };
+  }
 }
 
-NrlApi.getMatchDetails("13/rabbitohs-v-knights").then(console.log);
+NrlApi.getRoundDetails(16).then(console.log);
 
 // interface ITeam {
 //   name: string;
