@@ -10,13 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.18.0",
-    "eventsource": "^1.0.7",
     "jsdom": "^11.12.0",
-    "moment": "^2.22.2",
     "typescript": "^3.4.5"
   },
   "devDependencies": {
-    "@types/eventsource": "^1.1.0",
     "@types/jsdom": "^12.2.3",
     "@types/node": "^11.13.8"
   }
