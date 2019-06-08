@@ -1,9 +1,11 @@
 import axios from "axios";
 import { JSDOM } from "jsdom";
-// import * as EventSource from "eventsource";
+import { rounds } from "./rounds";
 
-// FOUND AN API!!! https://www.nrl.com/draw/data?competition=111&season=2019&round=17
-// ANYTHING WITH THE /data on the end returns JSON!!!!
+/**
+ * Seems that quite a lot of data pages on the NRL site respond when you append a "/data" to the end of the url.
+ * @example https://www.nrl.com/draw/data?competition=111&season=2019&round=17
+ */
 
 interface ITeam {
   name?: string;
@@ -13,14 +15,20 @@ interface ITeam {
 interface INrlLadder {
   [key: string]: string;
 }
+
+interface INrlRoundKey {
+  // roundnumber: roundname
+  [key: string]: string;
+}
+
 interface INrlApi {
   /** Returns the current ladder in a keyed format */
   getLadder: () => Promise<INrlLadder>;
   getMatchDetails: (matchId: string, round: number) => Promise<INrlMatch>;
   /** Information on a specific round */
   getRoundDetails: (round?: number) => Promise<INrlRound>;
-  /** Information from all of the rounds */
-  getAllRounds: () => Promise<any>;
+  /** List of all rounds, includes finals. */
+  getAllRounds: () => Promise<INrlRoundKey>;
 }
 
 export interface INrlRound {
@@ -48,27 +56,19 @@ export interface INrlMatchLive extends INrlMatch {
 }
 
 export class NrlApi implements INrlApi {
-  static async getMatchDetails(matchId: string): Promise<INrlMatchLive> {
+  async getMatchDetails(matchId: string): Promise<INrlMatchLive> {
     if (!matchId) {
       throw new Error("MatchId is required");
     }
 
     const [round, slug] = matchId.split("/");
-    let data;
-    try {
-      const response = await axios.get(
-        // TODO - remove hard-coded 2019
-        `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${slug}/`
-      );
-      data = response.data;
-    } catch (e) {
-      throw new Error(e);
-    }
-    const { document } = new JSDOM(data).window;
-
-    const { match } = JSON.parse(
-      document.querySelector("#vue-match-centre").getAttribute("q-data")
-    );
+    const { data: match } = await axios
+      .get(
+        `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${slug}/data`
+      )
+      .catch(e => {
+        throw new Error(e);
+      });
 
     return {
       homeTeam: {
@@ -93,7 +93,7 @@ export class NrlApi implements INrlApi {
     };
   }
 
-  static async getRoundDetails(round?: number): Promise<INrlRound> {
+  async getRoundDetails(round?: number): Promise<INrlRound> {
     let data;
     try {
       const response = await axios.get(
@@ -153,137 +153,25 @@ export class NrlApi implements INrlApi {
       byes
     };
   }
+
+  async getLadder(): Promise<INrlLadder> {
+    const { data } = await axios
+      .get("https://www.nrl.com/ladder/data")
+      .catch(e => {
+        throw new Error(e);
+      });
+
+    const { ladder } = data;
+
+    return ladder.reduce((ladder: INrlLadder, team: any, index: number) => {
+      ladder[index + 1] = team.teamNickName;
+      return ladder;
+    }, {});
+  }
+
+  async getAllRounds() {
+    return Promise.resolve(rounds);
+  }
 }
 
-NrlApi.getRoundDetails(16).then(console.log);
-
-// interface ITeam {
-//   name: string;
-//   score: number;
-//   ladderPosition: string;
-// }
-
-// export interface INrlMatch {
-//   matchMode: "Post" | "Pre" | "Current";
-//   round: string;
-//   venue: string;
-//   homeTeam: ITeam;
-//   awayTeam: ITeam;
-//   clock: {
-//     kickOffTime: Date;
-//     currentGameTime: string;
-//   };
-// }
-
-// /**
-//  * Returns an event source..
-//  *
-//  * @todo have not tested
-//  *
-//  * @param matchSlug the slug from the nrl site
-//  */
-// export const getMatchEventSource = async (matchSlug: string) => {
-//   // return new EventSource(matchSlug);
-// };
-
-// export const getLiveMatchScore = async (
-//   round: string,
-//   /** away-vs-home */
-//   matchSlug: string
-// ): Promise<INrlMatch> => {
-//   let data;
-//   try {
-//     const response = await axios.get(
-//       `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${matchSlug}/`
-//     );
-//     data = response.data;
-//   } catch (e) {
-//     console.error(e);
-//     return;
-//   }
-
-//   const { document } = new JSDOM(data).window;
-
-//   const gameData = JSON.parse(
-//     document.querySelector("#vue-match-centre").getAttribute("q-data")
-//   );
-
-//   const clockTimeElement = document.querySelector(".match-clock__time");
-
-//   let clockTime;
-//   if (clockTimeElement) {
-//     clockTime = clockTimeElement.innerHTML.trim();
-//   }
-
-//   return {
-//     venue: gameData.venue,
-//     round: round,
-//     clock: {
-//       currentGameTime: clockTime || "unknown",
-//       kickOffTime: gameData.startTime
-//     },
-//     matchMode: ""
-//   };
-// };
-
-// export const getMatchesByRound = async (
-//   round?: number
-// ): Promise<INrlMatch[]> => {
-//   let data;
-//   try {
-//     const response = await axios.get(
-//       `https://www.nrl.com/draw/?competition=111&season=2019&round=${
-//         round ? round : "" // defaults to the current round!
-//       }`
-//     );
-//     data = response.data;
-//   } catch (e) {
-//     throw e;
-//   }
-
-//   const { document } = new JSDOM(data).window;
-
-//   const drawData = JSON.parse(
-//     document.querySelector("#vue-draw").getAttribute("q-data")
-//   );
-
-//   const pageRound = document
-//     .querySelector(".filter-round__button--dropdown")
-//     .innerHTML.trim();
-
-//   console.log(1, drawData.drawGroups[1].matches);
-
-//   const matches: INrlMatch[] = (drawData.drawGroups as [])
-//     .filter((v: any) => v.title !== "Byes")
-//     .flatMap((day: any) => day.matches)
-//     .map(
-//       (match): INrlMatch => ({
-//         venue: match.venue,
-//         matchMode: match.matchMode,
-//         round: pageRound,
-//         homeTeam: {
-//           name: match.homeTeam.nickName,
-//           ladderPosition: match.homeTeam.teamPosition,
-//           score: match.homeTeam.score
-//         },
-//         awayTeam: {
-//           name: match.awayTeam.nickName,
-//           ladderPosition: match.awayTeam.teamPosition,
-//           score: match.awayTeam.score
-//         },
-//         clock: {
-//           currentGameTime: match.clock.gameTime,
-//           kickOffTime: match.clock.kickOffTimeLong
-//         }
-//       })
-//     );
-//   return matches;
-// };
-
-// getMatchesByRound().then(console.log);
-
-// getMatchEventSource(
-//   "https://www.nrl.com/live-events?topic=/match/20191110830/detail"
-// ).then(src => {
-//   src.onmessage = msg => console.log(msg);
-// });
+// new NrlApi().getMatchDetails("13/rabbitohs-v-knights").then(console.log);
