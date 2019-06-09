@@ -102,7 +102,7 @@ class NrlApi {
     }
 }
 exports.NrlApi = NrlApi;
-new NrlApi()
-    .getRoundDetails()
-    .then(x => console.log(JSON.stringify(x, null, 2)));
+// new NrlApi()
+//   .getRoundDetails()
+//   .then(x => console.log(JSON.stringify(x, null, 2)));
 //# sourceMappingURL=index.js.map

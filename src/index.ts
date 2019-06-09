@@ -177,6 +177,6 @@ export class NrlApi implements INrlApi {
   }
 }
 
-new NrlApi()
-  .getRoundDetails()
-  .then(x => console.log(JSON.stringify(x, null, 2)));
+// new NrlApi()
+//   .getRoundDetails()
+//   .then(x => console.log(JSON.stringify(x, null, 2)));
