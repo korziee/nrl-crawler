@@ -85,9 +85,10 @@ export class NrlApi implements INrlApi {
       round: match.roundNumber,
       // TODO - fix matchTime to be timezone specific
       kickOffTime: match.startTime,
-      matchId: `${match.roundNumber}/${match.homeTeam.nickName}-v-${
-        match.awayTeam.nickName
-      }`,
+      matchId: matchId,
+      // matchId: `${match.roundNumber}/${match.homeTeam.nickName}-v-${
+      //   match.awayTeam.nickName
+      // }`,
       gameSecondsElapsed: match.gameSeconds
     };
   }
@@ -122,21 +123,27 @@ export class NrlApi implements INrlApi {
           return accum;
         }
         accum[group.title] = group.matches.map(
-          (x: any): INrlMatch => ({
-            awayTeam: {
-              nickName: x.awayTeam.nickName
-            },
-            homeTeam: {
-              nickName: x.homeTeam.nickName
-            },
-            kickOffTime: x.clock.kickOffTimeLong,
-            matchId: `${roundFromMatchCentreUrl}/${x.homeTeam.nickName}-v-${
-              x.awayTeam.nickName
-            }`,
-            matchMode: x.matchMode,
-            round: roundFromMatchCentreUrl,
-            venue: x.venue
-          })
+          (x: any): INrlMatch => {
+            const trimmedHomeName = x.homeTeam.nickName
+              .replace(/\s/, "-")
+              .toLowerCase();
+            const trimmedAwayName = x.awayTeam.nickName
+              .replace(/\s/, "-")
+              .toLowerCase();
+            return {
+              awayTeam: {
+                nickName: x.awayTeam.nickName
+              },
+              homeTeam: {
+                nickName: x.homeTeam.nickName
+              },
+              kickOffTime: x.clock.kickOffTimeLong,
+              matchId: `${roundFromMatchCentreUrl}/${trimmedHomeName}-v-${trimmedAwayName}`,
+              matchMode: x.matchMode,
+              round: roundFromMatchCentreUrl,
+              venue: x.venue
+            };
+          }
         );
         return accum;
       },
@@ -169,3 +176,7 @@ export class NrlApi implements INrlApi {
     return Promise.resolve(rounds);
   }
 }
+
+new NrlApi()
+  .getRoundDetails()
+  .then(x => console.log(JSON.stringify(x, null, 2)));
