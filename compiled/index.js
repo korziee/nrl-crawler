@@ -9,7 +9,7 @@ class NrlApi {
         }
         const [round, slug] = matchId.split("/");
         const { data: match } = await axios_1.default
-            .get(`https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${slug}/data`)
+            .get(`https://www.nrl.com/draw/nrl-premiership/2019/${round}/${slug}/data`)
             .catch(e => {
             throw new Error(e);
         });
@@ -88,7 +88,4 @@ class NrlApi {
     }
 }
 exports.NrlApi = NrlApi;
-new NrlApi()
-    .getRoundDetails()
-    .then(x => console.log(JSON.stringify(x, null, 2)));
 //# sourceMappingURL=index.js.map
