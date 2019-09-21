@@ -60,9 +60,10 @@ export class NrlApi implements INrlApi {
     }
 
     const [round, slug] = matchId.split("/");
+
     const { data: match } = await axios
       .get(
-        `https://www.nrl.com/draw/nrl-premiership/2019/round-${round}/${slug}/data`
+        `https://www.nrl.com/draw/nrl-premiership/2019/${round}/${slug}/data`
       )
       .catch(e => {
         throw new Error(e);
@@ -154,7 +155,3 @@ export class NrlApi implements INrlApi {
     return Promise.resolve(rounds);
   }
 }
-
-new NrlApi()
-  .getRoundDetails()
-  .then(x => console.log(JSON.stringify(x, null, 2)));
