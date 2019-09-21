@@ -22,10 +22,7 @@ interface INrlApi {
     getAllRounds: () => Promise<INrlRoundKey>;
 }
 export interface INrlRound {
-    /** Matches are grouped up in the days in which they occur */
-    matches: {
-        [key: string]: INrlMatch[];
-    };
+    matches: INrlMatch[];
     /** Names of teams with byes */
     byes: string[];
 }

@@ -31,8 +31,7 @@ interface INrlApi {
 }
 
 export interface INrlRound {
-  /** Matches are grouped up in the days in which they occur */
-  matches: { [key: string]: INrlMatch[] };
+  matches: INrlMatch[];
   /** Names of teams with byes */
   byes: string[];
 }
@@ -102,58 +101,37 @@ export class NrlApi implements INrlApi {
         throw new Error(e);
       });
 
-    const { drawGroups } = data;
+    const { fixtures, byes } = data;
 
-    // console.log(1, drawGroups);
+    const matchCentreUrl = fixtures[0].matchCentreUrl;
+    const isFinals = matchCentreUrl.includes("finals-week");
+    const matchId = isFinals
+      ? matchCentreUrl.match(/(finals-week-.)\/(game-.)/)[0]
+      : matchCentreUrl.match(/(round-..?)\/(.+-v-.+)\//)[0];
 
-    const matchCentreUrl = drawGroups[0].matches[0].matchCentreUrl;
-    const roundFromMatchCentreUrl = matchCentreUrl
-      .match(/(round-..?)\//)[1]
-      .split("-")[1];
+    const mappedByes: string[] = byes
+      ? byes.map((b: any) => b.teamNickName)
+      : [];
 
-    const byes: string[] = [];
+    const matches = fixtures.map((f: any) => {
+      return {
+        awayTeam: {
+          nickName: f.awayTeam.nickName
+        },
+        homeTeam: {
+          nickName: f.homeTeam.nickName
+        },
+        kickOffTime: f.clock.kickOffTimeLong,
+        matchId: matchId,
+        matchMode: f.matchMode,
+        round: matchId.split("/")[0],
+        venue: f.venue
+      };
+    });
 
-    const matches = drawGroups.reduce(
-      (accum: { [key: string]: INrlMatch }, group: any) => {
-        if (group.title === "Byes") {
-          byes.push(...group.byes.map((x: any) => x.teamNickName));
-          return accum;
-        }
-        if (accum[group.title]) {
-          return accum;
-        }
-        accum[group.title] = group.matches.map(
-          (x: any): INrlMatch => {
-            const trimmedHomeName = x.homeTeam.nickName
-              .replace(/\s/, "-")
-              .toLowerCase();
-            const trimmedAwayName = x.awayTeam.nickName
-              .replace(/\s/, "-")
-              .toLowerCase();
-            return {
-              awayTeam: {
-                nickName: x.awayTeam.nickName
-              },
-              homeTeam: {
-                nickName: x.homeTeam.nickName
-              },
-              kickOffTime: x.clock.kickOffTimeLong,
-              matchId: `${roundFromMatchCentreUrl}/${trimmedHomeName}-v-${trimmedAwayName}`,
-              matchMode: x.matchMode,
-              round: roundFromMatchCentreUrl,
-              venue: x.venue
-            };
-          }
-        );
-        return accum;
-      },
-      {} as {
-        [key: string]: INrlMatch[];
-      }
-    );
     return {
       matches,
-      byes
+      byes: mappedByes
     };
   }
 
@@ -177,6 +155,6 @@ export class NrlApi implements INrlApi {
   }
 }
 
-// new NrlApi()
-//   .getRoundDetails()
-//   .then(x => console.log(JSON.stringify(x, null, 2)));
+new NrlApi()
+  .getRoundDetails()
+  .then(x => console.log(JSON.stringify(x, null, 2)));

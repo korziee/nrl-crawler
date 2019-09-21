@@ -42,47 +42,33 @@ class NrlApi {
             .catch(e => {
             throw new Error(e);
         });
-        const { drawGroups } = data;
-        // console.log(1, drawGroups);
-        const matchCentreUrl = drawGroups[0].matches[0].matchCentreUrl;
-        const roundFromMatchCentreUrl = matchCentreUrl
-            .match(/(round-..?)\//)[1]
-            .split("-")[1];
-        const byes = [];
-        const matches = drawGroups.reduce((accum, group) => {
-            if (group.title === "Byes") {
-                byes.push(...group.byes.map((x) => x.teamNickName));
-                return accum;
-            }
-            if (accum[group.title]) {
-                return accum;
-            }
-            accum[group.title] = group.matches.map((x) => {
-                const trimmedHomeName = x.homeTeam.nickName
-                    .replace(/\s/, "-")
-                    .toLowerCase();
-                const trimmedAwayName = x.awayTeam.nickName
-                    .replace(/\s/, "-")
-                    .toLowerCase();
-                return {
-                    awayTeam: {
-                        nickName: x.awayTeam.nickName
-                    },
-                    homeTeam: {
-                        nickName: x.homeTeam.nickName
-                    },
-                    kickOffTime: x.clock.kickOffTimeLong,
-                    matchId: `${roundFromMatchCentreUrl}/${trimmedHomeName}-v-${trimmedAwayName}`,
-                    matchMode: x.matchMode,
-                    round: roundFromMatchCentreUrl,
-                    venue: x.venue
-                };
-            });
-            return accum;
-        }, {});
+        const { fixtures, byes } = data;
+        const matchCentreUrl = fixtures[0].matchCentreUrl;
+        const isFinals = matchCentreUrl.includes("finals-week");
+        const matchId = isFinals
+            ? matchCentreUrl.match(/(finals-week-.)\/(game-.)/)[0]
+            : matchCentreUrl.match(/(round-..?)\/(.+-v-.+)\//)[0];
+        const mappedByes = byes
+            ? byes.map((b) => b.teamNickName)
+            : [];
+        const matches = fixtures.map((f) => {
+            return {
+                awayTeam: {
+                    nickName: f.awayTeam.nickName
+                },
+                homeTeam: {
+                    nickName: f.homeTeam.nickName
+                },
+                kickOffTime: f.clock.kickOffTimeLong,
+                matchId: matchId,
+                matchMode: f.matchMode,
+                round: matchId.split("/")[0],
+                venue: f.venue
+            };
+        });
         return {
             matches,
-            byes
+            byes: mappedByes
         };
     }
     async getLadder() {
@@ -102,7 +88,7 @@ class NrlApi {
     }
 }
 exports.NrlApi = NrlApi;
-// new NrlApi()
-//   .getRoundDetails()
-//   .then(x => console.log(JSON.stringify(x, null, 2)));
+new NrlApi()
+    .getRoundDetails()
+    .then(x => console.log(JSON.stringify(x, null, 2)));
 //# sourceMappingURL=index.js.map
